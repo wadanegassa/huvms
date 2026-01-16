@@ -8,11 +8,9 @@ import java.util.List;
 import java.util.Date;
 import java.text.SimpleDateFormat;
 import com.vms.dao.VehicleRequestDAO;
-import com.vms.dao.TripDAO;
 import com.vms.dao.VehicleDAO;
 import com.vms.dao.DriverDAO;
 import com.vms.models.VehicleRequest;
-import com.vms.models.Trip;
 import com.vms.models.Vehicle;
 import com.vms.models.Driver;
 import com.vms.models.User;
@@ -24,160 +22,178 @@ import com.formdev.flatlaf.FlatClientProperties;
 public class RequestManagementForm extends JPanel {
     private JTable table;
     private DefaultTableModel tableModel;
-    private JTextField txtStaff, txtDestination, txtDate, txtDistance;
-    private JComboBox<String> comboStatus;
-    private JButton btnAdd, btnUpdate, btnDelete;
+    private JTextField txtRequester, txtDestination, txtDistance, txtDate;
+    private JButton btnRequest, btnApprove, btnReject;
     private VehicleRequestDAO requestDAO;
-    private TripDAO tripDAO;
     private VehicleDAO vehicleDAO;
     private DriverDAO driverDAO;
     private User currentUser;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
+    private Timer refreshTimer;
+
     public RequestManagementForm(User user) {
         this.currentUser = user;
-        this.requestDAO = new VehicleRequestDAO();
-        this.tripDAO = new TripDAO();
-        this.vehicleDAO = new VehicleDAO();
-        this.driverDAO = new DriverDAO();
+        requestDAO = new VehicleRequestDAO();
+        vehicleDAO = new VehicleDAO();
+        driverDAO = new DriverDAO();
         initComponents();
         loadData();
+        startAutoRefresh();
+    }
+
+    private void startAutoRefresh() {
+        refreshTimer = new Timer(5000, e -> loadData());
+        refreshTimer.start();
+
+        this.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentShown(java.awt.event.ComponentEvent e) {
+                loadData();
+                refreshTimer.start();
+            }
+
+            @Override
+            public void componentHidden(java.awt.event.ComponentEvent e) {
+                refreshTimer.stop();
+            }
+        });
     }
 
     private void initComponents() {
-        setLayout(new BorderLayout(10, 10));
-        setBorder(new EmptyBorder(20, 20, 20, 20));
+        setLayout(new BorderLayout(20, 20));
+        setBorder(new EmptyBorder(30, 30, 30, 30));
+        setBackground(new Color(25, 25, 25));
+
+        // Header
+        JLabel title = new JLabel("Vehicle Requests");
+        title.setFont(new Font("Inter", Font.BOLD, 24));
+        title.setForeground(new Color(220, 220, 220));
+        add(title, BorderLayout.NORTH);
 
         // Table Section
         tableModel = new DefaultTableModel(
-                new Object[] { "ID", "Staff Name", "Destination", "Date Requested", "Distance (km)", "Status" }, 0) {
+                new Object[] { "ID", "Requester", "Destination", "Distance", "Date", "Status" }, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
             }
         };
         table = new JTable(tableModel);
-        table.setRowHeight(30);
-        table.setShowGrid(false);
-        table.setIntercellSpacing(new Dimension(0, 0));
+        table.setRowHeight(35);
+        table.setShowVerticalLines(false);
         table.getTableHeader().setReorderingAllowed(false);
-        table.putClientProperty(FlatClientProperties.STYLE, "showHorizontalLines: true");
+        table.putClientProperty(FlatClientProperties.STYLE, "showHorizontalLines: true; gridColor: #444444");
 
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getViewport().setBackground(new Color(30, 30, 30));
         add(scrollPane, BorderLayout.CENTER);
 
         // Input Section
         JPanel inputPanel = new JPanel(new GridBagLayout());
+        inputPanel.setBackground(new Color(25, 25, 25));
         inputPanel.setBorder(new EmptyBorder(20, 0, 0, 0));
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = new Insets(10, 10, 10, 10);
         gbc.weightx = 1.0;
 
-        // Row 1: Staff & Destination
+        // Row 1: Labels
         gbc.gridx = 0;
         gbc.gridy = 0;
-        inputPanel.add(new JLabel("Staff Name"), gbc);
+        inputPanel.add(createLabel("Requester Name"), gbc);
         gbc.gridx = 1;
         gbc.gridy = 0;
-        inputPanel.add(new JLabel("Destination"), gbc);
+        inputPanel.add(createLabel("Destination"), gbc);
 
+        // Row 2: Fields
         gbc.gridx = 0;
         gbc.gridy = 1;
-        txtStaff = new JTextField();
-        txtStaff.putClientProperty(FlatClientProperties.STYLE, "arc: 8");
-        inputPanel.add(txtStaff, gbc);
+        txtRequester = createTextField();
+        if ("STAFF".equals(currentUser.getRole())) {
+            txtRequester.setText(currentUser.getUsername());
+            txtRequester.setEditable(false);
+        }
+        inputPanel.add(txtRequester, gbc);
 
         gbc.gridx = 1;
         gbc.gridy = 1;
-        txtDestination = new JTextField();
-        txtDestination.putClientProperty(FlatClientProperties.STYLE, "arc: 8");
+        txtDestination = createTextField();
         inputPanel.add(txtDestination, gbc);
 
-        // Row 2: Date & Distance
+        // Row 3: Labels
         gbc.gridx = 0;
         gbc.gridy = 2;
-        inputPanel.add(new JLabel("Date (yyyy-MM-dd HH:mm:ss)"), gbc);
+        inputPanel.add(createLabel("Distance (km)"), gbc);
         gbc.gridx = 1;
         gbc.gridy = 2;
-        inputPanel.add(new JLabel("Distance (km)"), gbc);
+        inputPanel.add(createLabel("Date (yyyy-MM-dd HH:mm:ss)"), gbc);
 
+        // Row 4: Fields
         gbc.gridx = 0;
         gbc.gridy = 3;
-        txtDate = new JTextField(dateFormat.format(new Date()));
-        txtDate.putClientProperty(FlatClientProperties.STYLE, "arc: 8");
-        inputPanel.add(txtDate, gbc);
-
-        gbc.gridx = 1;
-        gbc.gridy = 3;
-        txtDistance = new JTextField();
-        txtDistance.putClientProperty(FlatClientProperties.STYLE, "arc: 8");
+        txtDistance = createTextField();
         inputPanel.add(txtDistance, gbc);
 
-        // Row 3: Status
-        gbc.gridx = 0;
-        gbc.gridy = 4;
-        inputPanel.add(new JLabel("Request Status"), gbc);
-        gbc.gridx = 0;
-        gbc.gridy = 5;
-        comboStatus = new JComboBox<>(new String[] { "PENDING", "APPROVED", "REJECTED" });
-        comboStatus.putClientProperty(FlatClientProperties.STYLE, "arc: 8");
-        inputPanel.add(comboStatus, gbc);
+        gbc.gridx = 1;
+        gbc.gridy = 3;
+        txtDate = createTextField();
+        txtDate.setText(dateFormat.format(new Date()));
+        inputPanel.add(txtDate, gbc);
 
         // Buttons
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
+        buttonPanel.setBackground(new Color(25, 25, 25));
+        buttonPanel.setBorder(new EmptyBorder(20, 0, 0, 0));
 
-        btnAdd = new JButton("Submit Request");
-        styleButton(btnAdd, "#0078d7", Color.WHITE);
+        btnRequest = createButton("Submit Request", "#0078d7", Color.WHITE);
+        btnApprove = createButton("Approve", "#009933", Color.WHITE);
+        btnReject = createButton("Reject", "#d11a2a", Color.WHITE);
 
-        btnUpdate = new JButton("Update Status");
-        styleButton(btnUpdate, "#2d2d2d", Color.LIGHT_GRAY);
-
-        btnDelete = new JButton("Cancel");
-        styleButton(btnDelete, "#d11a2a", Color.WHITE);
-
-        // Role-based restrictions
         if ("STAFF".equals(currentUser.getRole())) {
-            txtStaff.setText(currentUser.getUsername());
-            txtStaff.setEditable(false);
-            comboStatus.setEnabled(false);
-            btnUpdate.setVisible(false);
-            btnDelete.setVisible(false);
+            buttonPanel.add(btnRequest);
+        } else {
+            buttonPanel.add(btnApprove);
+            buttonPanel.add(btnReject);
         }
 
-        buttonPanel.add(btnAdd);
-        buttonPanel.add(btnUpdate);
-        buttonPanel.add(btnDelete);
-
         JPanel southPanel = new JPanel(new BorderLayout());
+        southPanel.setBackground(new Color(25, 25, 25));
         southPanel.add(inputPanel, BorderLayout.CENTER);
         southPanel.add(buttonPanel, BorderLayout.SOUTH);
         add(southPanel, BorderLayout.SOUTH);
 
         // Listeners
-        btnAdd.addActionListener(e -> addRequest());
-        btnUpdate.addActionListener(e -> updateRequest());
-        btnDelete.addActionListener(e -> deleteRequest());
-
-        table.getSelectionModel().addListSelectionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row != -1) {
-                txtStaff.setText(table.getValueAt(row, 1).toString());
-                txtDestination.setText(table.getValueAt(row, 2).toString());
-                txtDate.setText(table.getValueAt(row, 3).toString());
-                txtDistance.setText(table.getValueAt(row, 4).toString());
-                comboStatus.setSelectedItem(table.getValueAt(row, 5).toString());
-            }
-        });
+        btnRequest.addActionListener(e -> addRequest());
+        btnApprove.addActionListener(e -> approveRequest());
+        btnReject.addActionListener(e -> rejectRequest());
     }
 
-    private void styleButton(JButton btn, String bgColor, Color fgColor) {
+    private JLabel createLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setForeground(Color.GRAY);
+        label.setFont(new Font("Inter", Font.PLAIN, 12));
+        return label;
+    }
+
+    private JTextField createTextField() {
+        JTextField field = new JTextField();
+        field.putClientProperty(FlatClientProperties.STYLE,
+                "arc: 10; background: #333333; foreground: #ffffff; borderWidth: 0; margin: 5,10,5,10");
+        field.setPreferredSize(new Dimension(100, 35));
+        return field;
+    }
+
+    private JButton createButton(String text, String bgColor, Color fgColor) {
+        JButton btn = new JButton(text);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btn.setFont(new Font("Inter", Font.BOLD, 13));
         btn.setForeground(fgColor);
         btn.putClientProperty(FlatClientProperties.STYLE,
-                "background: " + bgColor + "; margin: 5,15,5,15");
+                "background: " + bgColor + "; margin: 8,20,8,20; arc: 10; borderWidth: 0; focusWidth: 0");
+        return btn;
     }
 
     private void loadData() {
@@ -186,8 +202,8 @@ public class RequestManagementForm extends JPanel {
         for (VehicleRequest r : requests) {
             if ("ADMIN".equals(currentUser.getRole()) || r.getStaffName().equals(currentUser.getUsername())) {
                 tableModel.addRow(new Object[] {
-                        r.getRequestId(), r.getStaffName(), r.getDestination(), dateFormat.format(r.getDate()),
-                        r.getDistance(), r.getStatus()
+                        r.getRequestId(), r.getStaffName(), r.getDestination(), r.getDistance(),
+                        dateFormat.format(r.getDate()), r.getStatus()
                 });
             }
         }
@@ -195,9 +211,8 @@ public class RequestManagementForm extends JPanel {
 
     private void addRequest() {
         try {
-            VehicleRequest r = new VehicleRequest(0, txtStaff.getText(), txtDestination.getText(),
-                    dateFormat.parse(txtDate.getText()), Double.parseDouble(txtDistance.getText()),
-                    (String) comboStatus.getSelectedItem());
+            VehicleRequest r = new VehicleRequest(0, txtRequester.getText(), txtDestination.getText(),
+                    dateFormat.parse(txtDate.getText()), Double.parseDouble(txtDistance.getText()), "PENDING");
             if (requestDAO.addRequest(r)) {
                 loadData();
                 clearInputs();
@@ -207,103 +222,46 @@ public class RequestManagementForm extends JPanel {
         }
     }
 
-    private void updateRequest() {
+    private void approveRequest() {
         int row = table.getSelectedRow();
         if (row == -1)
             return;
         int id = (int) table.getValueAt(row, 0);
-        String oldStatus = table.getValueAt(row, 5).toString();
-        String newStatus = (String) comboStatus.getSelectedItem();
 
-        try {
-            VehicleRequest r = new VehicleRequest(id, txtStaff.getText(), txtDestination.getText(),
-                    dateFormat.parse(txtDate.getText()), Double.parseDouble(txtDistance.getText()),
-                    newStatus);
-
-            if ("APPROVED".equals(newStatus) && !"APPROVED".equals(oldStatus)) {
-                assignTripResources(r);
-            } else {
-                if (requestDAO.updateRequest(r)) {
-                    loadData();
-                    JOptionPane.showMessageDialog(this, "Request status updated to " + newStatus);
-                }
-            }
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
-        }
-    }
-
-    private void assignTripResources(VehicleRequest r) {
-        JPanel panel = new JPanel(new GridLayout(0, 1, 5, 5));
+        // Assign Vehicle and Driver
+        JPanel panel = new JPanel(new GridLayout(2, 2, 10, 10));
         JComboBox<Vehicle> vehicleCombo = new JComboBox<>();
         JComboBox<Driver> driverCombo = new JComboBox<>();
 
-        List<Vehicle> vehicles = vehicleDAO.getAllVehicles();
-        List<Driver> drivers = driverDAO.getAllDrivers();
-
-        for (Vehicle v : vehicles) {
-            if ("Available".equalsIgnoreCase(v.getStatus())) {
-                vehicleCombo.addItem(v);
-            }
-        }
-        for (Driver d : drivers) {
+        for (Vehicle v : vehicleDAO.getAllVehicles())
+            vehicleCombo.addItem(v);
+        for (Driver d : driverDAO.getAllDrivers())
             driverCombo.addItem(d);
-        }
-
-        if (vehicleCombo.getItemCount() == 0) {
-            JOptionPane.showMessageDialog(this, "No available vehicles to assign!", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
 
         panel.add(new JLabel("Select Vehicle:"));
         panel.add(vehicleCombo);
         panel.add(new JLabel("Select Driver:"));
         panel.add(driverCombo);
 
-        int result = JOptionPane.showConfirmDialog(this, panel, "Assign Resources for Trip",
-                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-
+        int result = JOptionPane.showConfirmDialog(this, panel, "Assign Resources", JOptionPane.OK_CANCEL_OPTION);
         if (result == JOptionPane.OK_OPTION) {
-            Vehicle selectedVehicle = (Vehicle) vehicleCombo.getSelectedItem();
-            Driver selectedDriver = (Driver) driverCombo.getSelectedItem();
-
-            Trip trip = new Trip(0, selectedVehicle, selectedDriver, r.getDestination(), r.getDate(), r.getDistance(),
-                    r.getStaffName());
-
-            if (tripDAO.addTrip(trip)) {
-                // Update request status
-                r.setStatus("APPROVED");
-                requestDAO.updateRequest(r);
-
-                // Update vehicle status to 'On Trip'
-                selectedVehicle.setStatus("On Trip");
-                vehicleDAO.updateVehicle(selectedVehicle);
-
+            if (requestDAO.updateRequestStatus(id, "APPROVED")) {
                 loadData();
-                JOptionPane.showMessageDialog(this, "Trip assigned and request approved successfully!");
-            } else {
-                JOptionPane.showMessageDialog(this, "Failed to create trip record.", "Error",
-                        JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
-    private void deleteRequest() {
+    private void rejectRequest() {
         int row = table.getSelectedRow();
         if (row == -1)
             return;
         int id = (int) table.getValueAt(row, 0);
-        int confirm = JOptionPane.showConfirmDialog(this, "Cancel this request?", "Confirm", JOptionPane.YES_NO_OPTION);
-        if (confirm == JOptionPane.YES_OPTION) {
-            if (requestDAO.deleteRequest(id)) {
-                loadData();
-                clearInputs();
-            }
+        if (requestDAO.updateRequestStatus(id, "REJECTED")) {
+            loadData();
         }
     }
 
     private void clearInputs() {
-        txtStaff.setText("");
         txtDestination.setText("");
         txtDistance.setText("");
         table.clearSelection();

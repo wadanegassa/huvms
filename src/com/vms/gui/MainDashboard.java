@@ -6,7 +6,6 @@ import java.awt.*;
 import com.vms.models.User;
 import com.formdev.flatlaf.FlatClientProperties;
 
-
 public class MainDashboard extends JFrame {
     private User currentUser;
     private JPanel cardPanel;
@@ -101,14 +100,8 @@ public class MainDashboard extends JFrame {
         cardPanel = new JPanel(cardLayout);
         cardPanel.setBackground(new Color(25, 25, 25));
 
-        // Add Welcome Panel
-        JPanel welcomePanel = new JPanel(new GridBagLayout());
-        welcomePanel.setBackground(new Color(25, 25, 25));
-        JLabel lblWelcome = new JLabel("Welcome to Haramaya University VMS");
-        lblWelcome.setFont(new Font("Inter", Font.BOLD, 32));
-        lblWelcome.setForeground(new Color(200, 200, 200));
-        welcomePanel.add(lblWelcome);
-        cardPanel.add(welcomePanel, "Dashboard");
+        // Add Dashboard Panel
+        cardPanel.add(new DashboardPanel(currentUser), "Dashboard");
 
         // Add Management Panels
         cardPanel.add(new VehicleManagementForm(), "Vehicles");

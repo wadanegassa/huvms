@@ -80,6 +80,19 @@ public class VehicleRequestDAO {
         }
     }
 
+    public boolean updateRequestStatus(int requestId, String status) {
+        String sql = "UPDATE vehicleRequest SET status = ? WHERE requestId = ?";
+        Connection conn = DBConnection.getConnection();
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, status);
+            pstmt.setInt(2, requestId);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("[DAO] Error updating request status: " + e.getMessage());
+            return false;
+        }
+    }
+
     public boolean deleteRequest(int requestId) {
         String sql = "DELETE FROM vehicleRequest WHERE requestId = ?";
         Connection conn = DBConnection.getConnection();
