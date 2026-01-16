@@ -10,9 +10,11 @@ import java.text.SimpleDateFormat;
 import com.vms.dao.VehicleRequestDAO;
 import com.vms.dao.VehicleDAO;
 import com.vms.dao.DriverDAO;
+import com.vms.dao.TripDAO;
 import com.vms.models.VehicleRequest;
 import com.vms.models.Vehicle;
 import com.vms.models.Driver;
+import com.vms.models.Trip;
 import com.vms.models.User;
 import com.formdev.flatlaf.FlatClientProperties;
 
@@ -27,6 +29,7 @@ public class RequestManagementForm extends JPanel {
     private VehicleRequestDAO requestDAO;
     private VehicleDAO vehicleDAO;
     private DriverDAO driverDAO;
+    private TripDAO tripDAO;
     private User currentUser;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
@@ -37,6 +40,7 @@ public class RequestManagementForm extends JPanel {
         requestDAO = new VehicleRequestDAO();
         vehicleDAO = new VehicleDAO();
         driverDAO = new DriverDAO();
+        tripDAO = new TripDAO();
         initComponents();
         loadData();
         startAutoRefresh();
@@ -245,7 +249,26 @@ public class RequestManagementForm extends JPanel {
 
         int result = JOptionPane.showConfirmDialog(this, panel, "Assign Resources", JOptionPane.OK_CANCEL_OPTION);
         if (result == JOptionPane.OK_OPTION) {
-            if (requestDAO.updateRequestStatus(id, "APPROVED")) {
+            Vehicle selectedVehicle = (Vehicle) vehicleCombo.getSelectedItem();
+            Driver selectedDriver = (Driver) driverCombo.getSelectedItem();
+
+            if (requestDAO.updateRequestAssignment(id, selectedVehicle.getVehicleId(), selectedDriver.getDriverId(),
+                    "APPROVED")) {
+                // Automatically create a Trip record
+                VehicleRequest r = null;
+                for (VehicleRequest req : requestDAO.getAllRequests()) {
+                    if (req.getRequestId() == id) {
+                        r = req;
+                        break;
+                    }
+                }
+
+                if (r != null) {
+                    Trip trip = new Trip(0, selectedVehicle, selectedDriver, r.getDestination(), r.getDate(),
+                            r.getDistance(), r.getStaffName());
+                    tripDAO.addTrip(trip);
+                }
+
                 loadData();
             }
         }

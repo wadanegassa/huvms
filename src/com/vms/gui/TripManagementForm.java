@@ -10,9 +10,11 @@ import java.text.SimpleDateFormat;
 import com.vms.dao.TripDAO;
 import com.vms.dao.VehicleDAO;
 import com.vms.dao.DriverDAO;
+import com.vms.dao.VehicleRequestDAO;
 import com.vms.models.Trip;
 import com.vms.models.Vehicle;
 import com.vms.models.Driver;
+import com.vms.models.VehicleRequest;
 import com.vms.models.User;
 import com.formdev.flatlaf.FlatClientProperties;
 
@@ -29,6 +31,7 @@ public class TripManagementForm extends JPanel {
     private TripDAO tripDAO;
     private VehicleDAO vehicleDAO;
     private DriverDAO driverDAO;
+    private VehicleRequestDAO requestDAO;
     private User currentUser;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
@@ -39,6 +42,7 @@ public class TripManagementForm extends JPanel {
         this.tripDAO = new TripDAO();
         this.vehicleDAO = new VehicleDAO();
         this.driverDAO = new DriverDAO();
+        this.requestDAO = new VehicleRequestDAO();
         initComponents();
         loadData();
         startAutoRefresh();
@@ -68,14 +72,15 @@ public class TripManagementForm extends JPanel {
         setBackground(new Color(25, 25, 25));
 
         // Header
-        JLabel title = new JLabel("Trip Management");
+        JLabel title = new JLabel("STAFF".equals(currentUser.getRole()) ? "My Assigned Trips" : "Trip Management");
         title.setFont(new Font("Inter", Font.BOLD, 24));
         title.setForeground(new Color(220, 220, 220));
         add(title, BorderLayout.NORTH);
 
         // Table Section
         tableModel = new DefaultTableModel(
-                new Object[] { "ID", "Vehicle", "Driver", "Destination", "Date", "Distance", "Requester" }, 0) {
+                new Object[] { "ID", "Vehicle", "Driver", "Destination", "Date", "Distance", "Requester", "Status" },
+                0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -243,13 +248,44 @@ public class TripManagementForm extends JPanel {
         loadDrivers();
 
         tableModel.setRowCount(0);
+
+        // Load Trips
         List<Trip> trips = tripDAO.getAllTrips();
         for (Trip t : trips) {
             if ("ADMIN".equals(currentUser.getRole()) || t.getRequesterName().equals(currentUser.getUsername())) {
                 tableModel.addRow(new Object[] {
                         t.getTripId(), t.getVehicle().getPlateNumber(), t.getDriver().getName(),
-                        t.getDestination(), dateFormat.format(t.getDate()), t.getDistance(), t.getRequesterName()
+                        t.getDestination(), dateFormat.format(t.getDate()), t.getDistance(), t.getRequesterName(),
+                        t.getStatus()
                 });
+            }
+        }
+
+        // For Staff, also load Pending/Rejected/Unlinked Requests
+        if ("STAFF".equals(currentUser.getRole())) {
+            List<VehicleRequest> requests = requestDAO.getAllRequests();
+            for (VehicleRequest r : requests) {
+                if (r.getStaffName().equals(currentUser.getUsername())) {
+                    // Check if this request is already shown as a trip
+                    boolean alreadyShown = false;
+                    for (Trip t : trips) {
+                        if (t.getDestination().equals(r.getDestination()) &&
+                                dateFormat.format(t.getDate()).equals(dateFormat.format(r.getDate()))) {
+                            alreadyShown = true;
+                            break;
+                        }
+                    }
+
+                    if (!alreadyShown) {
+                        tableModel.addRow(new Object[] {
+                                "REQ-" + r.getRequestId(),
+                                r.getVehiclePlate() != null ? r.getVehiclePlate() : "N/A",
+                                r.getDriverName() != null ? r.getDriverName() : "N/A",
+                                r.getDestination(), dateFormat.format(r.getDate()), r.getDistance(), r.getStaffName(),
+                                r.getStatus()
+                        });
+                    }
+                }
             }
         }
     }

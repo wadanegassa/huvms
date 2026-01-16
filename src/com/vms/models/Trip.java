@@ -13,6 +13,7 @@ public class Trip {
     private Date date;
     private double distance;
     private String requesterName;
+    private String status = "APPROVED";
 
     public Trip() {
     }
@@ -26,6 +27,7 @@ public class Trip {
         this.date = date;
         this.distance = distance;
         this.requesterName = requesterName;
+        this.status = "APPROVED";
     }
 
     public int getTripId() {
@@ -82,5 +84,13 @@ public class Trip {
 
     public void setRequesterName(String requesterName) {
         this.requesterName = requesterName;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }

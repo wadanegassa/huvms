@@ -12,6 +12,10 @@ public class VehicleRequest {
     private Date date;
     private double distance;
     private String status;
+    private int vehicleId;
+    private int driverId;
+    private String vehiclePlate;
+    private String driverName;
 
     public VehicleRequest() {
     }
@@ -24,6 +28,13 @@ public class VehicleRequest {
         this.date = date;
         this.distance = distance;
         this.status = status;
+    }
+
+    public VehicleRequest(int requestId, String staffName, String destination, Date date, double distance,
+            String status, int vehicleId, int driverId) {
+        this(requestId, staffName, destination, date, distance, status);
+        this.vehicleId = vehicleId;
+        this.driverId = driverId;
     }
 
     public int getRequestId() {
@@ -72,5 +83,37 @@ public class VehicleRequest {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public int getVehicleId() {
+        return vehicleId;
+    }
+
+    public void setVehicleId(int vehicleId) {
+        this.vehicleId = vehicleId;
+    }
+
+    public int getDriverId() {
+        return driverId;
+    }
+
+    public void setDriverId(int driverId) {
+        this.driverId = driverId;
+    }
+
+    public String getVehiclePlate() {
+        return vehiclePlate;
+    }
+
+    public void setVehiclePlate(String vehiclePlate) {
+        this.vehiclePlate = vehiclePlate;
+    }
+
+    public String getDriverName() {
+        return driverName;
+    }
+
+    public void setDriverName(String driverName) {
+        this.driverName = driverName;
     }
 }

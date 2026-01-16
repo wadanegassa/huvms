@@ -56,7 +56,11 @@ CREATE TABLE IF NOT EXISTS vehicleRequest (
     destination TEXT NOT NULL,
     date DATETIME NOT NULL,
     distance REAL NOT NULL,
-    status TEXT NOT NULL
+    status TEXT NOT NULL,
+    vehicleId INTEGER,
+    driverId INTEGER,
+    FOREIGN KEY (vehicleId) REFERENCES vehicle(vehicleId),
+    FOREIGN KEY (driverId) REFERENCES driver(driverId)
 );
 
 -- User Table

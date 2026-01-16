@@ -38,19 +38,27 @@ public class VehicleRequestDAO {
 
     public List<VehicleRequest> getAllRequests() {
         List<VehicleRequest> requests = new ArrayList<>();
-        String sql = "SELECT * FROM vehicleRequest";
+        String sql = "SELECT vr.*, v.plateNumber, d.name as driverName " +
+                "FROM vehicleRequest vr " +
+                "LEFT JOIN vehicle v ON vr.vehicleId = v.vehicleId " +
+                "LEFT JOIN driver d ON vr.driverId = d.driverId";
         Connection conn = DBConnection.getConnection();
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
-                requests.add(new VehicleRequest(
+                VehicleRequest r = new VehicleRequest(
                         rs.getInt("requestId"),
                         rs.getString("staffName"),
                         rs.getString("destination"),
                         dateFormat.parse(rs.getString("date")),
                         rs.getDouble("distance"),
-                        rs.getString("status")));
+                        rs.getString("status"),
+                        rs.getInt("vehicleId"),
+                        rs.getInt("driverId"));
+                r.setVehiclePlate(rs.getString("plateNumber"));
+                r.setDriverName(rs.getString("driverName"));
+                requests.add(r);
             }
         } catch (SQLException | ParseException e) {
             System.err.println("[DAO] Error retrieving requests: " + e.getMessage());
@@ -89,6 +97,21 @@ public class VehicleRequestDAO {
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("[DAO] Error updating request status: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean updateRequestAssignment(int requestId, int vehicleId, int driverId, String status) {
+        String sql = "UPDATE vehicleRequest SET vehicleId = ?, driverId = ?, status = ? WHERE requestId = ?";
+        Connection conn = DBConnection.getConnection();
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, vehicleId);
+            pstmt.setInt(2, driverId);
+            pstmt.setString(3, status);
+            pstmt.setInt(4, requestId);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("[DAO] Error updating request assignment: " + e.getMessage());
             return false;
         }
     }

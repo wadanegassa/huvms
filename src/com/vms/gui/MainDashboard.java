@@ -44,7 +44,7 @@ public class MainDashboard extends JFrame {
         if ("ADMIN".equals(currentUser.getRole())) {
             modules = new String[] { "Dashboard", "Vehicles", "Drivers", "Trips", "Fuel", "Maintenance", "Requests" };
         } else {
-            modules = new String[] { "Dashboard", "Requests", "Trips" };
+            modules = new String[] { "Dashboard", "Requests", "My Trips" };
         }
 
         for (String module : modules) {
@@ -107,6 +107,7 @@ public class MainDashboard extends JFrame {
         cardPanel.add(new VehicleManagementForm(), "Vehicles");
         cardPanel.add(new DriverManagementForm(), "Drivers");
         cardPanel.add(new TripManagementForm(currentUser), "Trips");
+        cardPanel.add(new TripManagementForm(currentUser), "My Trips");
         cardPanel.add(new FuelManagementForm(), "Fuel");
         cardPanel.add(new MaintenanceManagementForm(), "Maintenance");
         cardPanel.add(new RequestManagementForm(currentUser), "Requests");
@@ -140,7 +141,10 @@ public class MainDashboard extends JFrame {
     }
 
     private void showModule(String module) {
-        lblModuleTitle.setText(module + (module.equals("Dashboard") ? " Overview" : " Management"));
+        String title = module;
+        if (module.equals("My Trips"))
+            title = "Trip";
+        lblModuleTitle.setText(title + (module.equals("Dashboard") ? " Overview" : " Management"));
         cardLayout.show(cardPanel, module);
     }
 }
