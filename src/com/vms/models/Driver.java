@@ -8,15 +8,17 @@ public class Driver {
     private String name;
     private String licenseNumber;
     private String phone;
+    private String vehicleType;
 
     public Driver() {
     }
 
-    public Driver(int driverId, String name, String licenseNumber, String phone) {
+    public Driver(int driverId, String name, String licenseNumber, String phone, String vehicleType) {
         this.driverId = driverId;
         this.name = name;
         this.licenseNumber = licenseNumber;
         this.phone = phone;
+        this.vehicleType = vehicleType;
     }
 
     public int getDriverId() {
@@ -51,8 +53,17 @@ public class Driver {
         this.phone = phone;
     }
 
+    public String getVehicleType() {
+        return vehicleType;
+    }
+
+    public void setVehicleType(String vehicleType) {
+        this.vehicleType = vehicleType;
+    }
+
     @Override
     public String toString() {
-        return "Driver [ID=" + driverId + ", Name=" + name + ", License=" + licenseNumber + "]";
+        return "Driver [ID=" + driverId + ", Name=" + name + ", License=" + licenseNumber + ", Type=" + vehicleType
+                + "]";
     }
 }

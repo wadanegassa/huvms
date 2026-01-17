@@ -12,13 +12,14 @@ import java.util.List;
 public class DriverDAO {
 
     public boolean addDriver(Driver driver) {
-        String sql = "INSERT INTO driver (name, licenseNumber, phone) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO driver (name, licenseNumber, phone, vehicleType) VALUES (?, ?, ?, ?)";
         try (Connection conn = DBConnection.getConnection();
                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setString(1, driver.getName());
             pstmt.setString(2, driver.getLicenseNumber());
             pstmt.setString(3, driver.getPhone());
+            pstmt.setString(4, driver.getVehicleType());
 
             boolean success = pstmt.executeUpdate() > 0;
             if (success)
@@ -31,14 +32,15 @@ public class DriverDAO {
     }
 
     public boolean updateDriver(Driver driver) {
-        String sql = "UPDATE driver SET name = ?, licenseNumber = ?, phone = ? WHERE driverId = ?";
+        String sql = "UPDATE driver SET name = ?, licenseNumber = ?, phone = ?, vehicleType = ? WHERE driverId = ?";
         Connection conn = DBConnection.getConnection();
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setString(1, driver.getName());
             pstmt.setString(2, driver.getLicenseNumber());
             pstmt.setString(3, driver.getPhone());
-            pstmt.setInt(4, driver.getDriverId());
+            pstmt.setString(4, driver.getVehicleType());
+            pstmt.setInt(5, driver.getDriverId());
 
             boolean success = pstmt.executeUpdate() > 0;
             if (success)
@@ -78,7 +80,8 @@ public class DriverDAO {
                         rs.getInt("driverId"),
                         rs.getString("name"),
                         rs.getString("licenseNumber"),
-                        rs.getString("phone")));
+                        rs.getString("phone"),
+                        rs.getString("vehicleType")));
             }
         } catch (SQLException e) {
             System.err.println("[DAO] Error retrieving drivers: " + e.getMessage());
@@ -98,7 +101,8 @@ public class DriverDAO {
                             rs.getInt("driverId"),
                             rs.getString("name"),
                             rs.getString("licenseNumber"),
-                            rs.getString("phone"));
+                            rs.getString("phone"),
+                            rs.getString("vehicleType"));
                 }
             }
         } catch (SQLException e) {

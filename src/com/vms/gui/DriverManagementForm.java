@@ -16,6 +16,7 @@ public class DriverManagementForm extends JPanel {
     private JTable table;
     private DefaultTableModel tableModel;
     private JTextField txtName, txtLicense, txtPhone;
+    private JComboBox<String> comboVehicleType;
     private JButton btnAdd, btnUpdate, btnDelete;
     private DriverDAO driverDAO;
     private Timer refreshTimer;
@@ -57,7 +58,8 @@ public class DriverManagementForm extends JPanel {
         add(title, BorderLayout.NORTH);
 
         // Table Section
-        tableModel = new DefaultTableModel(new Object[] { "ID", "Name", "License Number", "Phone" }, 0) {
+        tableModel = new DefaultTableModel(new Object[] { "ID", "Name", "License Number", "Phone", "Vehicle Type" },
+                0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -94,6 +96,9 @@ public class DriverManagementForm extends JPanel {
         gbc.gridx = 2;
         gbc.gridy = 0;
         inputPanel.add(createLabel("Phone"), gbc);
+        gbc.gridx = 3;
+        gbc.gridy = 0;
+        inputPanel.add(createLabel("Vehicle Type"), gbc);
 
         // Row 2: Fields
         gbc.gridx = 0;
@@ -110,6 +115,14 @@ public class DriverManagementForm extends JPanel {
         gbc.gridy = 1;
         txtPhone = createTextField();
         inputPanel.add(txtPhone, gbc);
+
+        gbc.gridx = 3;
+        gbc.gridy = 1;
+        comboVehicleType = new JComboBox<>(new String[] { "Bus", "SUV", "Truck", "Van", "Sedan" });
+        comboVehicleType.putClientProperty(FlatClientProperties.STYLE,
+                "arc: 10; background: #333333; foreground: #ffffff; borderWidth: 0; margin: 5,10,5,10");
+        comboVehicleType.setPreferredSize(new Dimension(100, 35));
+        inputPanel.add(comboVehicleType, gbc);
 
         // Buttons
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
@@ -134,6 +147,18 @@ public class DriverManagementForm extends JPanel {
         btnAdd.addActionListener(e -> addDriver());
         btnUpdate.addActionListener(e -> updateDriver());
         btnDelete.addActionListener(e -> deleteDriver());
+
+        table.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                int row = table.getSelectedRow();
+                if (row != -1) {
+                    txtName.setText(table.getValueAt(row, 1).toString());
+                    txtLicense.setText(table.getValueAt(row, 2).toString());
+                    txtPhone.setText(table.getValueAt(row, 3).toString());
+                    comboVehicleType.setSelectedItem(table.getValueAt(row, 4).toString());
+                }
+            }
+        });
     }
 
     private JLabel createLabel(String text) {
@@ -165,13 +190,15 @@ public class DriverManagementForm extends JPanel {
         tableModel.setRowCount(0);
         List<Driver> drivers = driverDAO.getAllDrivers();
         for (Driver d : drivers) {
-            tableModel.addRow(new Object[] { d.getDriverId(), d.getName(), d.getLicenseNumber(), d.getPhone() });
+            tableModel.addRow(new Object[] { d.getDriverId(), d.getName(), d.getLicenseNumber(), d.getPhone(),
+                    d.getVehicleType() });
         }
     }
 
     private void addDriver() {
         try {
-            Driver d = new Driver(0, txtName.getText(), txtLicense.getText(), txtPhone.getText());
+            Driver d = new Driver(0, txtName.getText(), txtLicense.getText(), txtPhone.getText(),
+                    comboVehicleType.getSelectedItem().toString());
             if (driverDAO.addDriver(d)) {
                 loadData();
                 clearInputs();
@@ -187,7 +214,8 @@ public class DriverManagementForm extends JPanel {
             return;
         int id = (int) table.getValueAt(row, 0);
         try {
-            Driver d = new Driver(id, txtName.getText(), txtLicense.getText(), txtPhone.getText());
+            Driver d = new Driver(id, txtName.getText(), txtLicense.getText(), txtPhone.getText(),
+                    comboVehicleType.getSelectedItem().toString());
             if (driverDAO.updateDriver(d)) {
                 loadData();
             }
@@ -214,6 +242,7 @@ public class DriverManagementForm extends JPanel {
         txtName.setText("");
         txtLicense.setText("");
         txtPhone.setText("");
+        comboVehicleType.setSelectedIndex(0);
         table.clearSelection();
     }
 }

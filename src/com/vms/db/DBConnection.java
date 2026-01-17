@@ -60,14 +60,16 @@ public class DBConnection {
     private static void initializeDatabase() {
         String[] queries = {
                 "CREATE TABLE IF NOT EXISTS vehicle (vehicleId INTEGER PRIMARY KEY AUTOINCREMENT, plateNumber TEXT NOT NULL UNIQUE, vehicleType TEXT NOT NULL, status TEXT NOT NULL)",
-                "CREATE TABLE IF NOT EXISTS driver (driverId INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, licenseNumber TEXT NOT NULL UNIQUE, phone TEXT NOT NULL)",
+                "CREATE TABLE IF NOT EXISTS driver (driverId INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, licenseNumber TEXT NOT NULL UNIQUE, phone TEXT NOT NULL, vehicleType TEXT)",
                 "CREATE TABLE IF NOT EXISTS trip (tripId INTEGER PRIMARY KEY AUTOINCREMENT, vehicleId INTEGER, driverId INTEGER, destination TEXT NOT NULL, date TEXT NOT NULL, distance REAL NOT NULL, requesterName TEXT NOT NULL, FOREIGN KEY (vehicleId) REFERENCES vehicle(vehicleId), FOREIGN KEY (driverId) REFERENCES driver(driverId))",
                 "CREATE TABLE IF NOT EXISTS fuelRecord (recordId INTEGER PRIMARY KEY AUTOINCREMENT, vehicleId INTEGER, amount REAL NOT NULL, cost REAL NOT NULL, date TEXT NOT NULL, FOREIGN KEY (vehicleId) REFERENCES vehicle(vehicleId))",
                 "CREATE TABLE IF NOT EXISTS maintenanceRecord (recordId INTEGER PRIMARY KEY AUTOINCREMENT, vehicleId INTEGER, description TEXT NOT NULL, date TEXT NOT NULL, cost REAL NOT NULL, FOREIGN KEY (vehicleId) REFERENCES vehicle(vehicleId))",
                 "CREATE TABLE IF NOT EXISTS vehicleRequest (requestId INTEGER PRIMARY KEY AUTOINCREMENT, staffName TEXT NOT NULL, destination TEXT NOT NULL, date TEXT NOT NULL, distance REAL NOT NULL, status TEXT NOT NULL)",
                 "CREATE TABLE IF NOT EXISTS user (userId INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL UNIQUE, password TEXT NOT NULL, role TEXT NOT NULL)",
                 "INSERT OR IGNORE INTO user (username, password, role) VALUES ('admin', 'admin123', 'ADMIN')",
-                "INSERT OR IGNORE INTO user (username, password, role) VALUES ('staff', 'staff123', 'STAFF')"
+                "INSERT OR IGNORE INTO user (username, password, role) VALUES ('staff', 'staff123', 'STAFF')",
+                // Migration: Add vehicleType to driver if it doesn't exist
+                "ALTER TABLE driver ADD COLUMN vehicleType TEXT DEFAULT 'Bus'"
         };
 
         try (Statement stmt = connection.createStatement()) {
